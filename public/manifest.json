@@ -1,0 +1,10 @@
+{
+  "name": "LaperHemat",
+  "short_name": "LaperHemat",
+  "description": "Kalkulator Craving, Cart-Hacking, dan Split-Order untuk GoFood, GrabFood, dan ShopeeFood.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F8FAFC",
+  "theme_color": "#EA580C",
+  "lang": "id"
+}
