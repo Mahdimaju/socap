@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Flame } from 'lucide-react';
 import { useApp } from './AppContext';
 
 const SESSION_KEY = 'laperhemat_splash_seen';
@@ -36,7 +35,6 @@ export function SplashScreen() {
     if (phase !== 'visible') return;
     if (!minElapsed) return;
     if (!authLoaded) {
-      // Tunggu auth maksimal 600ms lagi setelah durasi minimal
       const fallback = setTimeout(() => {
         try {
           window.sessionStorage.setItem(SESSION_KEY, '1');
@@ -75,24 +73,21 @@ export function SplashScreen() {
     >
       <div className="w-full max-w-[430px] min-h-dvh bg-white flex flex-col items-center justify-center px-8 text-center shadow-2xl max-[430px]:shadow-none">
         <div className="lh-splash-mark flex flex-col items-center gap-3">
-          <span
-            className="w-16 h-16 rounded-2xl bg-orange-50 border border-orange-200 text-orange-600 inline-flex items-center justify-center shadow-sm"
-            aria-hidden="true"
-          >
-            <Flame className="w-9 h-9" strokeWidth={2.2} />
-          </span>
+          <img
+            src="/logo.jpg"
+            width={180}
+            height={180}
+            alt="LaperHemat"
+            fetchPriority="high"
+            className="w-44 h-44 object-contain"
+          />
 
-          <div>
-            <p className="text-2xl font-extrabold tracking-tight text-slate-900">
-              LaperHemat
-            </p>
-            <p className="mt-1 text-xs font-semibold text-slate-500">
-              Menyiapkan promo hemat Banjarmasin...
-            </p>
-          </div>
+          <p className="text-xs font-semibold text-slate-500">
+            Menyiapkan promo hemat Banjarmasin...
+          </p>
 
           <div
-            className="mt-2 w-40 h-1.5 rounded-full bg-slate-100 overflow-hidden"
+            className="mt-1 w-40 h-1.5 rounded-full bg-slate-100 overflow-hidden"
             aria-hidden="true"
           >
             <div className="lh-splash-bar h-full rounded-full bg-orange-600" />

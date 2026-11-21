@@ -50,15 +50,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <div className="flex items-center gap-2 min-w-0">
             <Link
               href="/"
-              className="inline-flex items-center gap-1.5 text-[17px] font-extrabold tracking-tight text-slate-900"
+              className="inline-flex items-center gap-1.5 text-[17px] font-extrabold tracking-tight"
             >
-              <span
-                className="w-7 h-7 rounded-lg bg-orange-50 text-orange-600 inline-flex items-center justify-center shrink-0"
-                aria-hidden="true"
-              >
-                <Flame className="w-[17px] h-[17px]" strokeWidth={2.2} />
+              <img
+                src="/logo-icon.png"
+                width={30}
+                height={30}
+                alt="Logo LaperHemat"
+                fetchPriority="high"
+                className="w-[30px] h-[30px] rounded-lg object-contain shrink-0"
+              />
+              <span>
+                <span className="text-orange-600">Laper</span>
+                <span className="text-emerald-700">Hemat</span>
               </span>
-              <span>LaperHemat</span>
             </Link>
             <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[11px] font-semibold whitespace-nowrap max-[360px]:hidden">
               Banjarmasin
