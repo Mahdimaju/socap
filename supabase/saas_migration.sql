@@ -65,3 +65,18 @@ DROP POLICY IF EXISTS "Users update own subscriptions" ON public.subscriptions;
 CREATE POLICY "Users update own subscriptions"
   ON public.subscriptions FOR UPDATE
   USING (auth.uid() = user_id);
+
+-- 4. Izin tambah penjual & menu oleh pengguna yang sudah login (halaman /admin)
+GRANT INSERT ON public.restaurants, public.menu_items TO authenticated;
+
+DROP POLICY IF EXISTS "Authenticated insert restaurants" ON public.restaurants;
+CREATE POLICY "Authenticated insert restaurants"
+  ON public.restaurants FOR INSERT
+  TO authenticated
+  WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Authenticated insert menu_items" ON public.menu_items;
+CREATE POLICY "Authenticated insert menu_items"
+  ON public.menu_items FOR INSERT
+  TO authenticated
+  WITH CHECK (true);

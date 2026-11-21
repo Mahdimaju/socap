@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { generateGeminiJson } from '@/lib/gemini';
 
 const MAX_BYTES = 4 * 1024 * 1024;
 const ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
@@ -59,33 +60,17 @@ export async function POST(request: Request) {
     const arrayBuffer = await file.arrayBuffer();
     const base64Data = Buffer.from(arrayBuffer).toString('base64');
 
-    const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`,
+    const result = await generateGeminiJson(apiKey, [
+      { text: SYSTEM_PROMPT },
       {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                { text: SYSTEM_PROMPT },
-                {
-                  inline_data: {
-                    mime_type: file.type,
-                    data: base64Data,
-                  },
-                },
-              ],
-            },
-          ],
-          generationConfig: {
-            responseMimeType: 'application/json',
-          },
-        }),
-      }
-    );
+        inline_data: {
+          mime_type: file.type,
+          data: base64Data,
+        },
+      },
+    ]);
 
-    if (!geminiRes.ok) {
+    if (!result.ok) {
       return NextResponse.json(
         {
           error: 'Gagal menghubungi layanan AI OCR. Silakan lengkapi detail promo secara manual.',
@@ -95,19 +80,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const geminiJson = await geminiRes.json();
-    const rawText = geminiJson?.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!rawText) {
-      return NextResponse.json(
-        {
-          error: 'AI tidak dapat membaca teks pada gambar. Silakan isi secara manual.',
-          fallbackToManual: true,
-        },
-        { status: 422 }
-      );
-    }
-
-    const parsed = JSON.parse(rawText);
+    const parsed = JSON.parse(result.text);
     if (parsed.error) {
       return NextResponse.json(
         { error: parsed.error, fallbackToManual: true },

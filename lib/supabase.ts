@@ -17,9 +17,8 @@ function getSupabaseEnv() {
 
 export function createSupabaseServerClient() {
   const { url, anonKey } = getSupabaseEnv();
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-  return createClient(url, serviceKey || anonKey, {
+  return createClient(url, anonKey, {
     auth: {
       persistSession: false,
       autoRefreshToken: false,
@@ -29,9 +28,9 @@ export function createSupabaseServerClient() {
 
 export function createSupabaseAdminClient() {
   const { url } = getSupabaseEnv();
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
 
-  if (!serviceKey) {
+  if (!serviceKey || serviceKey.length < 20 || /^(xxxx|your_)/i.test(serviceKey)) {
     return null;
   }
 

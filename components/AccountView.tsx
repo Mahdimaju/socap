@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { AlertCircle, CheckCircle2, Crown, LogOut, RefreshCw } from 'lucide-react';
+import Link from 'next/link';
+import { AlertCircle, CheckCircle2, Crown, LogOut, RefreshCw, Store } from 'lucide-react';
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser';
 import { formatRp } from '@/lib/cartHacking';
 import { useApp } from './AppContext';
@@ -175,11 +176,10 @@ export function AccountView() {
                 setAuthError(null);
                 setAuthInfo(null);
               }}
-              className={`min-h-[40px] rounded-lg text-sm font-bold transition-colors ${
-                authMode === 'login'
+              className={`min-h-[40px] rounded-lg text-sm font-bold transition-colors ${authMode === 'login'
                   ? 'bg-white text-slate-900 shadow-xs'
                   : 'text-slate-600 hover:text-slate-900'
-              }`}
+                }`}
             >
               Masuk
             </button>
@@ -192,11 +192,10 @@ export function AccountView() {
                 setAuthError(null);
                 setAuthInfo(null);
               }}
-              className={`min-h-[40px] rounded-lg text-sm font-bold transition-colors ${
-                authMode === 'register'
+              className={`min-h-[40px] rounded-lg text-sm font-bold transition-colors ${authMode === 'register'
                   ? 'bg-white text-slate-900 shadow-xs'
                   : 'text-slate-600 hover:text-slate-900'
-              }`}
+                }`}
             >
               Daftar Baru
             </button>
@@ -356,6 +355,20 @@ export function AccountView() {
               : 'Bayar Rp19.000 via Midtrans'}
         </button>
       </div>
+
+      {/* Pintasan Tambah Penjual & Estimasi Kalori AI (Khusus Admin) */}
+      {user.isAdmin && (
+        <Link
+          href="/admin"
+          className="w-full min-h-[48px] px-4 py-3 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-900 text-sm font-bold flex items-center justify-between gap-2 transition-colors"
+        >
+          <span className="inline-flex items-center gap-2">
+            <Store className="w-4 h-4 text-orange-600" aria-hidden="true" />
+            <span>Tambah Penjual &amp; Menu (AI Kalori)</span>
+          </span>
+          <span className="text-xs font-semibold text-slate-500">Admin</span>
+        </Link>
+      )}
 
       {/* Riwayat Transaksi */}
       <div className="flex flex-col gap-2.5">

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createSupabaseRouteClient } from '@/lib/supabase-ssr';
+import { isAdminEmail } from '@/lib/admin';
 
 const DAILY_FREE_QUOTA = 2;
 
@@ -60,7 +61,11 @@ export async function GET() {
       .limit(10);
 
     return NextResponse.json({
-      user: { id: user.id, email: user.email ?? '' },
+      user: {
+        id: user.id,
+        email: user.email ?? '',
+        isAdmin: isAdminEmail(user.email),
+      },
       profile: profile
         ? {
             points: profile.points ?? 0,
