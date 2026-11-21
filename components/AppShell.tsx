@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Camera, Flame, User, Users, X } from 'lucide-react';
 import { useApp } from './AppContext';
+import { SplashScreen } from './SplashScreen';
 
 const NAV_ITEMS = [
   { href: '/', label: 'Cari Hemat', icon: Flame },
@@ -42,6 +43,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-dvh flex justify-center bg-slate-200 max-[430px]:bg-slate-50">
+      <SplashScreen />
       <div className="w-full max-w-[430px] min-h-dvh bg-slate-50 relative flex flex-col shadow-2xl max-[430px]:shadow-none">
         {/* Sticky Top Header */}
         <header className="sticky top-0 z-30 h-14 px-4 bg-white border-b border-slate-200 flex items-center justify-between gap-2">
