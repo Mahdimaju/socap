@@ -5,6 +5,11 @@
 -- menjalankan skrip ini!
 -- ============================================================================
 
+-- 0. Pastikan role server (service_role / sb_secret_...) punya izin penuh pada semua tabel public
+GRANT USAGE ON SCHEMA public TO service_role;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO service_role;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO service_role;
+
 -- 1. Cabut izin UPDATE langsung dari client pada user_profiles & subscriptions
 --    agar user tidak bisa mengubah is_pro, points, daily_search_count, atau status bayar sendiri
 DROP POLICY IF EXISTS "Users update own profile" ON public.user_profiles;
