@@ -1,8 +1,19 @@
 import { NextResponse } from 'next/server';
-import { createSupabaseServerClient } from '@/lib/supabase';
+import { createSupabaseAdminClient, createSupabaseServerClient } from '@/lib/supabase';
 import { createSupabaseRouteClient } from '@/lib/supabase-ssr';
 import { isAdminEmail } from '@/lib/admin';
 import type { Platform } from '@/lib/types';
+
+function validateHttpsUrl(raw: string): string | null | 'INVALID' {
+  if (!raw) return null;
+  try {
+    const parsed = new URL(raw);
+    if (parsed.protocol !== 'https:') return 'INVALID';
+    return parsed.toString();
+  } catch {
+    return 'INVALID';
+  }
+}
 
 const VALID_PLATFORMS: Platform[] = ['GoFood', 'GrabFood', 'ShopeeFood'];
 
@@ -60,7 +71,14 @@ export async function POST(request: Request) {
     const city = String(body.city ?? 'Banjarmasin').trim() || 'Banjarmasin';
     const baseDeliveryFee = Math.max(0, Math.round(Number(body.base_delivery_fee) || 0));
     const serviceFee = Math.max(0, Math.round(Number(body.service_fee) || 0));
-    const deepLinkUrl = String(body.deep_link_url ?? '').trim() || null;
+    const deepLinkValidated = validateHttpsUrl(String(body.deep_link_url ?? '').trim());
+    if (deepLinkValidated === 'INVALID') {
+      return NextResponse.json(
+        { error: 'Link outlet harus berupa URL valid dengan awalan https://.' },
+        { status: 400 }
+      );
+    }
+    const deepLinkUrl = deepLinkValidated;
 
     const rawMenus = Array.isArray(body.menus) ? body.menus : [];
     const menus = rawMenus
@@ -88,7 +106,9 @@ export async function POST(request: Request) {
       );
     }
 
-    const { data: restaurant, error: restoErr } = await authSupabase
+    const dbWrite = createSupabaseAdminClient() ?? authSupabase;
+
+    const { data: restaurant, error: restoErr } = await dbWrite
       .from('restaurants')
       .insert({
         name,
@@ -107,7 +127,7 @@ export async function POST(request: Request) {
         {
           error:
             restoErr?.code === '42501'
-              ? 'Izin tambah penjual ditolak RLS Supabase. Jalankan ulang bagian GRANT & POLICY restaurants/menu_items di supabase/saas_migration.sql.'
+              ? 'Izin tambah penjual ditolak RLS Supabase. Pastikan SUPABASE_SERVICE_ROLE_KEY terisi atau policy INSERT aktif.'
               : `Gagal menyimpan penjual: ${restoErr?.message ?? 'Unknown error'}`,
         },
         { status: 500 }
@@ -122,7 +142,7 @@ export async function POST(request: Request) {
       is_addon: m.is_addon,
     }));
 
-    const { error: menuErr } = await authSupabase.from('menu_items').insert(menuRows);
+    const { error: menuErr } = await dbWrite.from('menu_items').insert(menuRows);
 
     if (menuErr) {
       return NextResponse.json(

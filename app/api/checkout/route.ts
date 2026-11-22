@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { createSupabaseAdminClient } from '@/lib/supabase';
 import { createSupabaseRouteClient } from '@/lib/supabase-ssr';
 import {
   getMidtransAuthHeader,
@@ -33,8 +34,10 @@ export async function POST() {
       );
     }
 
+    const dbWrite = createSupabaseAdminClient() ?? supabase;
+
     // Pastikan profil user ada sebelum foreign key subscriptions
-    await supabase
+    await dbWrite
       .from('user_profiles')
       .upsert({ id: user.id, email: user.email ?? null }, { onConflict: 'id' });
 
@@ -76,7 +79,7 @@ export async function POST() {
       return NextResponse.json({ error: detail }, { status: 502 });
     }
 
-    const { error: insertErr } = await supabase.from('subscriptions').insert({
+    const { error: insertErr } = await dbWrite.from('subscriptions').insert({
       user_id: user.id,
       order_id: orderId,
       amount: PRO_PLAN_PRICE,

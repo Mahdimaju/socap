@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { createSupabaseAdminClient } from '@/lib/supabase';
 import { createSupabaseRouteClient } from '@/lib/supabase-ssr';
 import {
   getMidtransAuthHeader,
@@ -55,7 +56,9 @@ export async function POST(request: Request) {
     const allowedStatuses = new Set(['pending', 'settlement', 'capture', 'expire', 'cancel', 'deny']);
     const normalizedStatus = allowedStatuses.has(txStatus) ? txStatus : 'pending';
 
-    await supabase
+    const dbWrite = createSupabaseAdminClient() ?? supabase;
+
+    await dbWrite
       .from('subscriptions')
       .update({
         status: normalizedStatus,
@@ -66,7 +69,7 @@ export async function POST(request: Request) {
       .eq('user_id', user.id);
 
     if (isPaid) {
-      const { data: profile } = await supabase
+      const { data: profile } = await dbWrite
         .from('user_profiles')
         .select('pro_expires_at')
         .eq('id', user.id)
@@ -80,7 +83,7 @@ export async function POST(request: Request) {
         baseTime + PRO_PLAN_DURATION_DAYS * 24 * 60 * 60 * 1000
       ).toISOString();
 
-      await supabase
+      await dbWrite
         .from('user_profiles')
         .update({ is_pro: true, pro_expires_at: nextExpiry })
         .eq('id', user.id);

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
-import { createSupabaseServerClient } from '@/lib/supabase';
+import { createSupabaseAdminClient, createSupabaseServerClient } from '@/lib/supabase';
 import { createSupabaseRouteClient } from '@/lib/supabase-ssr';
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
 import type { Platform } from '@/lib/types';
 
 const VALID_PLATFORMS: Platform[] = ['GoFood', 'GrabFood', 'ShopeeFood'];
@@ -29,6 +30,15 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    const ip = getClientIp(request);
+    const rate = checkRateLimit(`promos:${ip}`, 10, 10 * 60 * 1000);
+    if (!rate.allowed) {
+      return NextResponse.json(
+        { error: `Terlalu banyak kiriman promo. Coba lagi dalam ${rate.retryAfterSec} detik.` },
+        { status: 429 }
+      );
+    }
+
     const body = await request.json();
     const platform = body.platform as Platform;
     const promoCode = String(body.promo_code ?? 'AUTO').trim().toUpperCase() || 'AUTO';
@@ -71,9 +81,11 @@ export async function POST(request: Request) {
       data: { user },
     } = await authSupabase.auth.getUser();
 
+    const dbWrite = createSupabaseAdminClient() ?? authSupabase;
+
     if (user) {
       submittedBy = user.id;
-      await authSupabase
+      await dbWrite
         .from('user_profiles')
         .upsert({ id: user.id, email: user.email ?? null }, { onConflict: 'id' });
     }
@@ -110,7 +122,7 @@ export async function POST(request: Request) {
 
     let rewardedPoints = 0;
     if (user) {
-      const { data: profile } = await authSupabase
+      const { data: profile } = await dbWrite
         .from('user_profiles')
         .select('points, pro_expires_at')
         .eq('id', user.id)
@@ -123,7 +135,7 @@ export async function POST(request: Request) {
           : Date.now();
       const nextProExpiry = new Date(baseTime + 24 * 60 * 60 * 1000).toISOString();
 
-      await authSupabase
+      await dbWrite
         .from('user_profiles')
         .update({
           points: nextPoints,

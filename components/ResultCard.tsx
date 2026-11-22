@@ -48,7 +48,10 @@ export function ResultCard({ item, isBest, maxCalories }: ResultCardProps) {
 
     showToast(`Kode promo ${promoCode} berhasil disalin!`);
 
-    if (item.restaurant.deep_link_url) {
+    if (
+      item.restaurant.deep_link_url &&
+      item.restaurant.deep_link_url.startsWith('https://')
+    ) {
       window.open(item.restaurant.deep_link_url, '_blank', 'noopener,noreferrer');
     }
   };

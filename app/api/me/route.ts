@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { createSupabaseAdminClient } from '@/lib/supabase';
 import { createSupabaseRouteClient } from '@/lib/supabase-ssr';
 import { isAdminEmail } from '@/lib/admin';
 
@@ -16,17 +17,18 @@ export async function GET() {
       return NextResponse.json({ user: null, profile: null, subscriptions: [] });
     }
 
+    const dbWrite = createSupabaseAdminClient() ?? supabase;
     const today = new Date().toISOString().slice(0, 10);
 
     // Ambil atau buat profil jika trigger belum berjalan untuk akun lama
-    let { data: profile } = await supabase
+    let { data: profile } = await dbWrite
       .from('user_profiles')
       .select('*')
       .eq('id', user.id)
       .maybeSingle();
 
     if (!profile) {
-      const { data: inserted } = await supabase
+      const { data: inserted } = await dbWrite
         .from('user_profiles')
         .insert({ id: user.id, email: user.email ?? null })
         .select('*')
@@ -35,7 +37,7 @@ export async function GET() {
     }
 
     if (profile && profile.last_search_date !== today) {
-      const { data: resetProfile } = await supabase
+      const { data: resetProfile } = await dbWrite
         .from('user_profiles')
         .update({ daily_search_count: 0, last_search_date: today })
         .eq('id', user.id)

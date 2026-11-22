@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createSupabaseServerClient } from '@/lib/supabase';
+import { createSupabaseAdminClient, createSupabaseServerClient } from '@/lib/supabase';
 import { createSupabaseRouteClient } from '@/lib/supabase-ssr';
 import { optimizeCart } from '@/lib/cartHacking';
 import type {
@@ -51,15 +51,16 @@ export async function POST(request: Request) {
         } = await authSupabase.auth.getUser();
 
         if (user) {
+          const dbWrite = createSupabaseAdminClient() ?? authSupabase;
           const today = new Date().toISOString().slice(0, 10);
-          let { data: profile } = await authSupabase
+          let { data: profile } = await dbWrite
             .from('user_profiles')
             .select('*')
             .eq('id', user.id)
             .maybeSingle();
 
           if (!profile) {
-            const { data: created } = await authSupabase
+            const { data: created } = await dbWrite
               .from('user_profiles')
               .insert({ id: user.id, email: user.email ?? null })
               .select('*')
@@ -89,7 +90,7 @@ export async function POST(request: Request) {
               }
 
               const nextUsed = usedToday + 1;
-              await authSupabase
+              await dbWrite
                 .from('user_profiles')
                 .update({ daily_search_count: nextUsed, last_search_date: today })
                 .eq('id', user.id);

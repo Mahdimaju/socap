@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { generateGeminiJson } from '@/lib/gemini';
+import { createSupabaseRouteClient } from '@/lib/supabase-ssr';
+import { isAdminEmail } from '@/lib/admin';
 
 interface EstimateItemInput {
   name: string;
@@ -21,6 +23,26 @@ Kembalikan HANYA objek JSON valid tanpa markdown fence dengan struktur persis be
 
 export async function POST(request: Request) {
   try {
+    const authSupabase = await createSupabaseRouteClient();
+    const {
+      data: { user },
+      error: authError,
+    } = await authSupabase.auth.getUser();
+
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: 'Silakan masuk sebagai admin untuk menggunakan estimasi kalori AI.' },
+        { status: 401 }
+      );
+    }
+
+    if (!isAdminEmail(user.email)) {
+      return NextResponse.json(
+        { error: 'Akses ditolak. Endpoint ini khusus admin.' },
+        { status: 403 }
+      );
+    }
+
     const apiKey = process.env.GEMINI_API_KEY?.trim();
     if (!apiKey) {
       return NextResponse.json(
@@ -36,7 +58,7 @@ export async function POST(request: Request) {
     const body = (await request.json()) as { items?: EstimateItemInput[] };
     const items = (body.items ?? [])
       .map((item) => ({
-        name: String(item.name ?? '').trim(),
+        name: String(item.name ?? '').trim().slice(0, 120),
         is_addon: Boolean(item.is_addon),
       }))
       .filter((item) => item.name.length > 0);
@@ -44,6 +66,13 @@ export async function POST(request: Request) {
     if (items.length === 0) {
       return NextResponse.json(
         { error: 'Isi minimal 1 nama menu terlebih dahulu sebelum estimasi kalori.' },
+        { status: 400 }
+      );
+    }
+
+    if (items.length > 20) {
+      return NextResponse.json(
+        { error: 'Maksimal 20 menu per sekali estimasi.' },
         { status: 400 }
       );
     }

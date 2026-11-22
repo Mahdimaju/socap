@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { generateGeminiJson } from '@/lib/gemini';
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
 
 const MAX_BYTES = 4 * 1024 * 1024;
 const ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
@@ -20,6 +21,26 @@ Jika gambar bukan merupakan voucher makanan yang valid, kembalikan {"error": "Bu
 
 export async function POST(request: Request) {
   try {
+    const ip = getClientIp(request);
+    const rate = checkRateLimit(`ocr:${ip}`, 10, 10 * 60 * 1000);
+    if (!rate.allowed) {
+      return NextResponse.json(
+        {
+          error: `Terlalu banyak permintaan scan. Coba lagi dalam ${rate.retryAfterSec} detik atau isi manual.`,
+          fallbackToManual: true,
+        },
+        { status: 429 }
+      );
+    }
+
+    const contentType = request.headers.get('content-type') ?? '';
+    if (!contentType.includes('multipart/form-data')) {
+      return NextResponse.json(
+        { error: 'Kirim file gambar menggunakan multipart/form-data.', fallbackToManual: true },
+        { status: 400 }
+      );
+    }
+
     const formData = await request.formData();
     const file = formData.get('image');
 
