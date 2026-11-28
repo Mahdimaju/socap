@@ -12,33 +12,36 @@ interface BeforeInstallPromptEvent extends Event {
 export function PwaManager() {
   const { showToast } = useApp();
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
-  const [dismissed, setDismissed] = useState(false);
+  const [visible, setVisible] = useState(false);
+  const [showManualHint, setShowManualHint] = useState(false);
+  const [isIos, setIsIos] = useState(false);
 
   useEffect(() => {
-    // Daftarkan Service Worker di browser yang mendukung
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(() => {
-        // Abaikan jika gagal di lingkungan non-HTTPS / dev
+        // Ignore registration errors in unsupported environments
       });
     }
 
-    // Sembunyikan banner jika sudah berjalan dalam mode aplikasi ter-install (standalone)
     const isStandalone =
       window.matchMedia('(display-mode: standalone)').matches ||
       Boolean((window.navigator as Navigator & { standalone?: boolean }).standalone);
-    if (isStandalone) {
-      setDismissed(true);
-      return;
-    }
+    if (isStandalone) return;
+
+    const ua = window.navigator.userAgent;
+    setIsIos(/iPad|iPhone|iPod/.test(ua));
+    setVisible(true);
 
     const onBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
+      setVisible(true);
     };
 
     const onAppInstalled = () => {
       setDeferredPrompt(null);
-      setDismissed(true);
+      setVisible(false);
+      setShowManualHint(false);
       showToast('LaperHemat berhasil dipasang di layar utama!');
     };
 
@@ -52,63 +55,74 @@ export function PwaManager() {
   }, [showToast]);
 
   const handleInstall = async () => {
-    if (!deferredPrompt) return;
-    await deferredPrompt.prompt();
-    const choice = await deferredPrompt.userChoice;
-    if (choice.outcome === 'accepted') {
-      setDeferredPrompt(null);
-      setDismissed(true);
+    if (deferredPrompt) {
+      await deferredPrompt.prompt();
+      const choice = await deferredPrompt.userChoice;
+      if (choice.outcome === 'accepted') {
+        setDeferredPrompt(null);
+        setVisible(false);
+      }
+      return;
     }
+
+    // Fallback untuk iOS Safari atau browser HP yang belum memicu beforeinstallprompt
+    setShowManualHint((prev) => !prev);
   };
 
-  const handleDismiss = () => {
-    setDismissed(true);
-  };
-
-  if (!deferredPrompt || dismissed) return null;
+  if (!visible) return null;
 
   return (
     <div
       role="region"
       aria-label="Pasang aplikasi LaperHemat"
-      className="bg-orange-50 border border-orange-200 rounded-2xl p-3 flex items-center justify-between gap-2.5"
+      className="bg-orange-50 border border-orange-200 rounded-2xl p-3 flex flex-col gap-2"
     >
-      <div className="flex items-center gap-2.5 min-w-0">
-        <img
-          src="/logo-icon.png"
-          width={36}
-          height={36}
-          alt=""
-          className="w-9 h-9 rounded-xl object-contain shrink-0 bg-white border border-orange-200/80"
-        />
-        <div className="min-w-0">
-          <p className="text-xs font-extrabold text-slate-900 truncate">
-            Pasang LaperHemat di HP
-          </p>
-          <p className="text-[11px] font-medium text-slate-600 truncate">
-            Akses cepat layar penuh seperti aplikasi
-          </p>
+      <div className="flex items-center justify-between gap-2.5">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <img
+            src="/logo-icon.png"
+            width={36}
+            height={36}
+            alt=""
+            className="w-9 h-9 rounded-xl object-contain shrink-0 bg-white border border-orange-200/80"
+          />
+          <div className="min-w-0">
+            <p className="text-xs font-extrabold text-slate-900 truncate">
+              Pasang LaperHemat di HP
+            </p>
+            <p className="text-[11px] font-medium text-slate-600 truncate">
+              Akses cepat layar penuh seperti aplikasi
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-1 shrink-0">
+          <button
+            type="button"
+            onClick={() => void handleInstall()}
+            className="min-h-[38px] px-3 rounded-xl bg-orange-700 hover:bg-orange-800 text-white text-xs font-bold inline-flex items-center gap-1.5"
+          >
+            <Download className="w-3.5 h-3.5" aria-hidden="true" />
+            <span>Install</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setVisible(false)}
+            aria-label="Tutup ajakan install aplikasi"
+            className="min-w-[36px] min-h-[38px] rounded-xl inline-flex items-center justify-center text-slate-500 hover:bg-orange-100 hover:text-slate-900"
+          >
+            <X className="w-4 h-4" aria-hidden="true" />
+          </button>
         </div>
       </div>
 
-      <div className="flex items-center gap-1 shrink-0">
-        <button
-          type="button"
-          onClick={() => void handleInstall()}
-          className="min-h-[38px] px-3 rounded-xl bg-orange-700 hover:bg-orange-800 text-white text-xs font-bold inline-flex items-center gap-1.5"
-        >
-          <Download className="w-3.5 h-3.5" aria-hidden="true" />
-          <span>Install</span>
-        </button>
-        <button
-          type="button"
-          onClick={handleDismiss}
-          aria-label="Tutup ajakan install aplikasi"
-          className="min-w-[36px] min-h-[38px] rounded-xl inline-flex items-center justify-center text-slate-500 hover:bg-orange-100 hover:text-slate-900"
-        >
-          <X className="w-4 h-4" aria-hidden="true" />
-        </button>
-      </div>
+      {showManualHint && (
+        <p className="text-[11.5px] leading-relaxed text-slate-700 bg-white border border-orange-200/80 rounded-xl px-3 py-2">
+          {isIos
+            ? 'Di Safari iPhone: ketuk ikon Bagikan (Share) di bawah layar, lalu pilih "Tambah ke Layar Utama" (Add to Home Screen).'
+            : 'Di browser HP: ketuk menu titik tiga (⋮) di pojok kanan atas, lalu pilih "Install app" atau "Tambahkan ke layar utama".'}
+        </p>
+      )}
     </div>
   );
 }
