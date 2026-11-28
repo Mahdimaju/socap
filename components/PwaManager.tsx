@@ -9,12 +9,10 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
 }
 
-const DISMISS_KEY = 'laperhemat_pwa_install_dismissed';
-
 export function PwaManager() {
   const { showToast } = useApp();
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
-  const [dismissed, setDismissed] = useState(true);
+  const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
     // Daftarkan Service Worker di browser yang mendukung
@@ -28,14 +26,9 @@ export function PwaManager() {
     const isStandalone =
       window.matchMedia('(display-mode: standalone)').matches ||
       Boolean((window.navigator as Navigator & { standalone?: boolean }).standalone);
-    if (isStandalone) return;
-
-    try {
-      if (window.localStorage.getItem(DISMISS_KEY) !== '1') {
-        setDismissed(false);
-      }
-    } catch {
-      setDismissed(false);
+    if (isStandalone) {
+      setDismissed(true);
+      return;
     }
 
     const onBeforeInstallPrompt = (e: Event) => {
@@ -70,11 +63,6 @@ export function PwaManager() {
 
   const handleDismiss = () => {
     setDismissed(true);
-    try {
-      window.localStorage.setItem(DISMISS_KEY, '1');
-    } catch {
-      // Ignore storage error
-    }
   };
 
   if (!deferredPrompt || dismissed) return null;
