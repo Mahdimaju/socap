@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { Camera, Flame, User, Users, X } from 'lucide-react';
 import { useApp } from './AppContext';
 import { SplashScreen } from './SplashScreen';
+import { PwaManager } from './PwaManager';
 
 const NAV_ITEMS = [
   { href: '/', label: 'Cari Hemat', icon: Flame },
@@ -109,6 +110,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
         {/* Main Content */}
         <main className="flex-1 px-4 pt-4 pb-24 flex flex-col gap-4">
+          <PwaManager />
           {children}
         </main>
 

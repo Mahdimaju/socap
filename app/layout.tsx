@@ -16,6 +16,14 @@ export const metadata: Metadata = {
   description:
     'Bandingkan harga akhir GoFood, GrabFood, dan ShopeeFood dengan trik add-on hemat dan batas kalori harian.',
   manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    title: 'LaperHemat',
+    statusBarStyle: 'default',
+  },
+  icons: {
+    apple: '/icon-192x192.png',
+  },
 };
 
 export const viewport: Viewport = {
